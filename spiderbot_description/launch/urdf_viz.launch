@@ -1,0 +1,14 @@
+<launch>
+  <arg name="model" default="$(find spiderbot_description)/urdf/spiderbot.urdf.xacro"/>
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(arg model)" />
+  <!--node pkg="joint_state_publisher" name="joint_state_publisher" type="joint_state_publisher">
+  	<param name="rate" value="30"/>
+  </node-->
+  <node pkg="joint_state_publisher_gui" name="joint_state_publisher_gui" type="joint_state_publisher_gui" />
+  <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher">
+    <param name="publish_frequency" value="30.0" />
+  </node>
+  
+  <node name="rviz" pkg="rviz" type="rviz" />
+
+</launch>

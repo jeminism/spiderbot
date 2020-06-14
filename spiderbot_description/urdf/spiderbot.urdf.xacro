@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="spiderbot">
+	<xacro:property name="body_radius" value="0.3"/>
+	<xacro:property name="body_height" value="0.2"/>
+	<xacro:property name="body_mass" value="0.4"/>
+	<xacro:property name="leg_pan_connector_radius" value="0.1"/>
+	<xacro:property name="leg_pan_connector_height" value="0.05"/>
+	<xacro:property name="leg_pan_vel" value="1.0"/>
+
+	<xacro:property name="upper_leg_mass" value="0.1"/>
+	<xacro:property name="upper_leg_length" value="0.2"/>
+	<xacro:property name="upper_leg_width" value="0.05"/>
+	<xacro:property name="upper_leg_thickness" value="0.05"/>
+	<xacro:property name="upper_leg_vel" value="1.0"/>
+	<xacro:property name="upper_leg_min_angle" value="-1.57075"/>
+	<xacro:property name="upper_leg_max_angle" value="1.57075"/>
+	<xacro:property name="upper_leg_starting_angle" value="-1.05"/>
+	
+	<xacro:property name="middle_leg_mass" value="0.08"/>
+	<xacro:property name="middle_leg_length" value="0.3"/>
+	<xacro:property name="middle_leg_width" value="0.035"/>
+	<xacro:property name="middle_leg_thickness" value="0.035"/>
+	<xacro:property name="middle_leg_vel" value="1.0"/>
+	<xacro:property name="middle_leg_min_angle" value="0.0"/>
+	<xacro:property name="middle_leg_max_angle" value="2.3562"/>
+	<xacro:property name="middle_leg_starting_angle" value="2.10"/>
+	
+	<xacro:property name="lower_leg_mass" value="0.06"/>
+	<xacro:property name="lower_leg_length" value="0.2"/>
+	<xacro:property name="lower_leg_width" value="0.020"/>
+	<xacro:property name="lower_leg_thickness" value="0.020"/>	
+	<xacro:property name="lower_leg_vel" value="1.0"/>
+	<xacro:property name="lower_leg_min_angle" value="0.0"/>
+	<xacro:property name="lower_leg_max_angle" value="1.57075"/>
+	<xacro:property name="lower_leg_starting_angle" value="1.05"/>
+
+	<xacro:macro name="leg_segment" params="joint_name parent_name link_name size_x size_y size_z mass joint_upper joint_lower joint_starting joint_vel joint_x color">
+		<joint name="${joint_name}" type="revolute">
+			<parent link="${parent_name}"/>
+			<child link="${link_name}"/>
+			<axis xyz="0 1 0"/>
+			<origin rpy="0 ${joint_starting} 0" xyz="${joint_x} 0 0"/>
+			<limit effort="1000" lower="${joint_lower - joint_starting}" upper="${joint_upper - joint_starting}" velocity="${joint_vel}"/>
+		</joint>
+		<transmission name="${joint_name}_transmission">
+            <type>transmission_interface/SimpleTransmission</type>
+            <actuator name="${joint_name}_actuator">
+                <mechanicalReduction>1</mechanicalReduction>
+               </actuator>
+            <joint name="${joint_name}">
+                <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+            </joint>
+        </transmission>
+          
+		<link name="${link_name}">
+			<inertial> 
+				<origin xyz="${size_x/2} 0 ${size_z/2}" rpy="0 0 0"/>
+				<mass value="${mass}"/>
+				<inertia ixx="${mass*(size_y*size_y + size_z*size_z)/12}"  ixy="0"  ixz="0" 
+					     iyy="${mass*(size_x*size_x + size_z*size_z)/12}" iyz="0" 
+					     izz="${mass*(size_x*size_x + size_y*size_y)/12}" />
+			</inertial>
+			<!-- joint visual -->
+			<visual>
+				<geometry>
+					<cylinder length="${size_y}" radius="${3*size_z/2}"/>
+				</geometry>
+				<origin xyz="0 0 0" rpy="1.57075 0 0"/>
+			</visual>
+			<collision>
+				<geometry>
+					<cylinder length="${size_y}" radius="${3*size_z/2}"/>
+				</geometry>
+				<origin xyz="0 0 0" rpy="1.57075 0 0"/>
+			</collision>
+		
+			<!-- leg visual -->
+			<visual>
+				<geometry>
+					<box size="${size_x} ${size_y} ${size_z}"/>
+				</geometry>
+				<origin xyz="${size_x/2} 0 0" rpy="0 0 0"/>
+			</visual>
+			<collision>
+				<geometry>
+					<box size="${size_x} ${size_y} ${size_z}"/>
+				</geometry>
+				<origin xyz="${size_x/2} 0 0" rpy="0 0 0"/>
+			</collision>
+		</link>
+		<gazebo reference="${joint_name}">
+			<kp>1000000.0</kp>
+            <kd>1.0</kd>
+            <mu1>0.8</mu1>
+            <mu2>0.8</mu2>
+            <material>Gazebo/${color}</material>
+        </gazebo>
+	</xacro:macro>
+	
+	<xacro:macro name="leg" params="number x y z yaw">
+		<!-- leg pan connector -->
+		<joint name="leg_${number}_pan_joint" type="revolute">
+            <parent link="base_link"/>
+            <child link="leg_${number}_pan_connector"/>
+            <axis xyz="0 0 1"/>
+            <origin rpy="0 0 ${yaw}" xyz="${x} ${y} ${z}"/>
+            <limit effort="1000" lower="-0.7854" upper="0.7854" velocity="${leg_pan_vel}"/>
+        </joint>
+        <transmission name="leg_${number}_pan_joint_transmission">
+            <type>transmission_interface/SimpleTransmission</type>
+            <actuator name="leg_${number}_pan_joint_actuator">
+                <mechanicalReduction>1</mechanicalReduction>
+               </actuator>
+            <joint name="leg_${number}_pan_joint">
+                <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+            </joint>
+        </transmission>
+        
+        <link name="leg_${number}_pan_connector">
+        	<visual>
+        		<geometry>
+					<cylinder length="${leg_pan_connector_height}" radius="${leg_pan_connector_radius}"/>
+				</geometry>
+				<origin rpy="0 0 0" xyz="0 0 0"/>
+			</visual>
+		</link>
+		
+		<!-- upper leg -->
+		<xacro:leg_segment joint_name="leg_${number}_upper_joint" parent_name="leg_${number}_pan_connector" link_name="leg_${number}_upper" size_x="${upper_leg_length}" size_y="${upper_leg_width}" size_z="${upper_leg_thickness}" mass="${upper_leg_mass}" joint_upper="${upper_leg_max_angle}" joint_lower="${upper_leg_min_angle}" joint_starting="${upper_leg_starting_angle}" joint_vel="${upper_leg_vel}" joint_x="${leg_pan_connector_radius}" color="Red" />
+		
+   		<!-- middle leg -->
+		<xacro:leg_segment joint_name="leg_${number}_middle_joint" parent_name="leg_${number}_upper" link_name="leg_${number}_middle" size_x="${middle_leg_length}" size_y="${middle_leg_width}" size_z="${middle_leg_thickness}" mass="${middle_leg_mass}" joint_upper="${middle_leg_max_angle}" joint_lower="${middle_leg_min_angle}" joint_starting="${middle_leg_starting_angle}" joint_vel="${middle_leg_vel}" joint_x="${upper_leg_length}" color="Blue" />
+		
+		<!-- lower leg -->
+		<xacro:leg_segment joint_name="leg_${number}_lower_joint" parent_name="leg_${number}_middle" link_name="leg_${number}_lower" size_x="${lower_leg_length}" size_y="${lower_leg_width}" size_z="${lower_leg_thickness}" mass="${lower_leg_mass}" joint_upper="${lower_leg_max_angle}" joint_lower="${lower_leg_min_angle}" joint_starting="${lower_leg_starting_angle}" joint_vel="${lower_leg_vel}" joint_x="${middle_leg_length}" color="Green" />		
+	
+	</xacro:macro>
+
+
+	<link name="base_link">
+		<inertial>
+            <origin xyz="0 0 ${body_height/4}" rpy="0 0 0"/>
+            <mass value="${body_mass}"/>
+            <inertia ixx="${body_mass*body_radius*body_radius/4.0 + body_mass*body_height*body_height/12.0}"  ixy="0"  ixz="0" 
+                     iyy="${body_mass*body_radius*body_radius/4.0 + body_mass*body_height*body_height/12.0}" iyz="0" 
+                     izz="${body_mass*body_radius*body_radius/2}"/>
+        </inertial>
+		<visual>
+			<geometry>
+				<cylinder length="${body_height}" radius="${body_radius}"/>
+			</geometry>
+			<origin xyz="0 0 ${body_height/4}" rpy="0 0 0"/>
+		</visual>
+		<collision>
+			<geometry>
+				<cylinder length="${body_height}" radius="${body_radius}"/>
+			</geometry>
+			<origin xyz="0 0 ${body_height/4}" rpy="0 0 0"/>
+		</collision>
+	</link>
+	<gazebo reference="base_link">
+		<kp>1000000.0</kp>
+		<kd>1.0</kd>
+		<mu1>0.8</mu1>
+		<mu2>0.8</mu2>
+		<material>Gazebo/Grey</material>
+	</gazebo>
+	<!-- 4 leg setup -->
+	<!--
+	<xacro:leg number="1" x="${body_radius}" y="0" z="0" yaw="0"/>
+	<xacro:leg number="2" x="0" y="${-body_radius}" z="0" yaw="-1.57075"/>
+	<xacro:leg number="3" x="${-body_radius}" y="0" z="0" yaw="-3.142"/>
+	<xacro:leg number="4" x="0" y="${body_radius}" z="0" yaw="1.57075"/>
+	-->
+	
+	<!-- 6 leg setup -->
+	<xacro:leg number="1" x="${body_radius}" y="0" z="0" yaw="0"/>
+	<xacro:leg number="2" x="${body_radius*0.5}" y="${-body_radius*0.866}" z="0" yaw="-1.0472"/>
+	<xacro:leg number="3" x="${-body_radius*0.5}" y="${-body_radius*0.866}" z="0" yaw="-2.0944"/>
+	<xacro:leg number="4" x="${-body_radius}" y="0" z="0" yaw="-3.142"/>
+	<xacro:leg number="5" x="${-body_radius*0.5}" y="${body_radius*0.866}" z="0" yaw="2.0944"/>
+	<xacro:leg number="6" x="${body_radius*0.5}" y="${body_radius*0.866}" z="0" yaw="1.0472"/>
+	
+	
+	
+	<gazebo>
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <legacyModeNS>False</legacyModeNS>
+            <robotNamespace>/</robotNamespace>
+        </plugin>
+    </gazebo>
+</robot>
+
+
